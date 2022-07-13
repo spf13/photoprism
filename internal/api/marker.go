@@ -117,7 +117,11 @@ func UpdateMarker(router *gin.RouterGroup) {
 			AbortSaveFailed(c)
 			return
 		} else if changed {
+			log.Debugf("   [SPF13] %s changed updated marker", changed)
 			if marker.FaceID != "" && marker.SubjUID != "" && marker.SubjSrc == entity.SrcManual {
+				log.Debugf("   [SPF13] FaceID blank")
+				log.Debugf("   [SPF13] Marker equals %s", entity.SrcManual)
+				log.Debugf("   [SPF13] Calling Optimize Faces")
 				if res, err := service.Faces().Optimize(); err != nil {
 					log.Errorf("faces: %s (optimize)", err)
 				} else if res.Merged > 0 {
@@ -125,16 +129,20 @@ func UpdateMarker(router *gin.RouterGroup) {
 				}
 			}
 
+			log.Debugf("   [SPF13] Update Subject Covers")
 			if err := query.UpdateSubjectCovers(); err != nil {
 				log.Errorf("faces: %s (update covers)", err)
 			}
 
+			log.Debugf("   [SPF13] Update Subject Counts")
 			if err := entity.UpdateSubjectCounts(); err != nil {
 				log.Errorf("faces: %s (update counts)", err)
 			}
 		}
 
 		// Update photo metadata.
+
+		log.Debugf("   [SPF13] Update Photo Metadata")
 		if !file.FilePrimary {
 			log.Infof("faces: skipped updating photo for non-primary file")
 		} else if p, err := query.PhotoByUID(file.PhotoUID); err != nil {
@@ -143,6 +151,7 @@ func UpdateMarker(router *gin.RouterGroup) {
 			log.Errorf("faces: %s (update photo title)", err)
 		} else {
 			// Notify clients.
+			log.Debugf("   [SPF13] PublishPhotoEvent")
 			PublishPhotoEvent(EntityUpdated, file.PhotoUID, c)
 		}
 

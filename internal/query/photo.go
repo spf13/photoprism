@@ -32,6 +32,7 @@ func PhotoByID(photoID uint64) (photo entity.Photo, err error) {
 
 // PhotoByUID returns a Photo based on the UID.
 func PhotoByUID(photoUID string) (photo entity.Photo, err error) {
+	log.Debugf("   [SPF13] PhotoByUID: %s", photoUID)
 	if err := UnscopedDb().Where("photo_uid = ?", photoUID).
 		Preload("Labels", func(db *gorm.DB) *gorm.DB {
 			return db.Order("photos_labels.uncertainty ASC, photos_labels.label_id DESC")

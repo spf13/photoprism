@@ -172,30 +172,40 @@ func (m *Photo) UpdateTitle(labels classify.Labels) error {
 
 // UpdateAndSaveTitle updates the photo title and saves it.
 func (m *Photo) UpdateAndSaveTitle() error {
+
+	log.Debugf("   [SPF13] UpdateAndSaveTitle")
 	if !m.HasID() {
 		return fmt.Errorf("cannot save photo whithout id")
 	}
 
+	log.Debugf("   [SPF13] FaceCount")
 	m.PhotoFaces = m.FaceCount()
 
+	log.Debugf("   [SPF13] ClassifyLabels")
 	labels := m.ClassifyLabels()
 
+	log.Debugf("   [SPF13] UpdateDateFields")
 	m.UpdateDateFields()
 
+	log.Debugf("   [SPF13] UpdateTitle")
 	if err := m.UpdateTitle(labels); err != nil {
 		log.Info(err)
 	}
 
+	log.Debugf("   [SPF13] GetDetails")
 	details := m.GetDetails()
 
+	log.Debugf("   [SPF13] UniqueWords")
 	w := txt.UniqueWords(txt.Words(details.Keywords))
 	w = append(w, labels.Keywords()...)
 	details.Keywords = strings.Join(txt.UniqueWords(w), ", ")
 
+	log.Debugf("   [SPF13] IndexKeywords")
 	if err := m.IndexKeywords(); err != nil {
 		log.Errorf("photo: %s", err.Error())
 	}
 
+	log.Debugf("   [SPF13] Save")
 	if err := m.Save(); err != nil {
 		return err
 	}
