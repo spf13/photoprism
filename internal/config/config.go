@@ -176,12 +176,6 @@ func (c *Config) Init() error {
 		return err
 	}
 
-	// Show funding info?
-	if !c.Sponsor() {
-		log.Info(MsgSponsor)
-		log.Info(MsgSignUp)
-	}
-
 	if insensitive, err := c.CaseInsensitive(); err != nil {
 		return err
 	} else if insensitive {
@@ -223,13 +217,16 @@ func (c *Config) Init() error {
 
 	c.Propagate()
 
-	err := c.connectDb()
-
-	if err == nil {
-		log.Debugf("config: successfully initialized [%s]", time.Since(start))
+	if err := c.connectDb(); err != nil {
+		return err
+	} else if !c.Sponsor() {
+		log.Info(MsgSponsor)
+		log.Info(MsgSignUp)
 	}
 
-	return err
+	log.Debugf("config: successfully initialized [%s]", time.Since(start))
+
+	return nil
 }
 
 // readSerial reads and returns the current storage serial.
@@ -471,12 +468,18 @@ func (c *Config) Demo() bool {
 	return c.options.Demo
 }
 
-// Sponsor reports if you support our mission, see https://photoprism.app/membership.
+// Sponsor reports if you have chosen to support our mission.
 func (c *Config) Sponsor() bool {
-	return Sponsor || c.options.Sponsor
+	if Sponsor || c.options.Sponsor {
+		return true
+	} else if c.hub != nil {
+		Sponsor = c.Hub().Plus()
+	}
+
+	return Sponsor
 }
 
-// NoSponsor reports if the instance is not operated by a sponsor.
+// NoSponsor reports if you prefer not to support our mission.
 func (c *Config) NoSponsor() bool {
 	return !c.Sponsor() && !c.Demo()
 }
@@ -684,9 +687,9 @@ func (c *Config) UpdateHub() {
 func (c *Config) initHub() {
 	if c.hub != nil {
 		return
+	} else if h := hub.NewConfig(c.Version(), c.HubConfigFile(), c.serial, c.env, c.UserAgent(), c.options.PartnerID); h != nil {
+		c.hub = h
 	}
-
-	c.hub = hub.NewConfig(c.Version(), c.HubConfigFile(), c.serial, c.env, c.UserAgent(), c.options.PartnerID)
 
 	if err := c.hub.Load(); err == nil {
 		// Do nothing.
